@@ -15,11 +15,18 @@ use sqlx::FromRow;
 // region:    --- Project Types
 #[serde_as]
 #[derive(Debug, Clone, Fields, FromRow, Serialize)]
-pub struct Project {
+pub struct Item {
 	pub id: i64,
 
 	pub owner_id: i64,
 	pub name: String,
+	pub origin: String,
+	pub grapes: String,
+	pub good_with: String,
+	pub acid: i8,
+	pub alcohol: i8,
+	pub body: i8,
+	pub tannin: i8,
 
 	// -- Timestamps
 	//    (creator and last modified user_id/time)
@@ -32,32 +39,24 @@ pub struct Project {
 }
 
 #[derive(Fields, Deserialize)]
-pub struct ProjectForCreate {
+pub struct ItemForCreate {
 	pub name: String,
 }
 
 #[derive(Fields, Deserialize)]
-pub struct ProjectForUpdate {
+pub struct ItemForUpdate {
 	pub name: Option<String>,
 	pub owner_id: Option<i64>,
 }
 
-/// The `ProjectForCreateInner` contains all necessary properties
-/// for a database insert.
-/// NOTE: In this design, `project.owner_id` is intrinsic to the
-///       `ProjectCreate` action, and should not be exposed to the API.
-///       It must be respected in rights by referencing the user initiating the action.
-///       Hence, in this scenario, we differentiate between `ProjectForCreate` (the public data structure)
-///       and `ProjectForCreateInner` (the representation of the data to be executed, i.e., inserted).
-/// (e.g., `owner_id` which is a db required field)
 #[derive(Fields)]
-struct ProjectForCreateInner {
+struct ItemForCreateInner {
 	pub name: String,
 	pub owner_id: i64,
 }
 
 #[derive(FilterNodes, Default, Deserialize)]
-pub struct ProjectFilter {
+pub struct ItemFilter {
 	id: Option<OpValsInt64>,
 	name: Option<OpValsString>,
 
@@ -71,35 +70,35 @@ pub struct ProjectFilter {
 // endregion: --- Project Types
 
 // region:    --- ProjectBmc
-pub struct ProjectBmc;
+pub struct ItemBmc;
 
-impl DbBmc for ProjectBmc {
-	const TABLE: &'static str = "project";
+impl DbBmc for ItemBmc {
+	const TABLE: &'static str = "item";
 }
 
-impl ProjectBmc {
+impl ItemBmc {
 	pub async fn create(
 		ctx: &Ctx,
 		mm: &ModelManager,
-		project_c: ProjectForCreate,
+		item_c: ItemForCreate,
 	) -> Result<i64> {
-		let project_c = ProjectForCreateInner {
-			name: project_c.name,
+		let item_c = ItemForCreateInner {
+			name: item_c.name,
 			owner_id: ctx.user_id(),
 		};
-		base::create::<Self, _>(ctx, mm, project_c).await
+		base::create::<Self, _>(ctx, mm, item_c).await
 	}
 
-	pub async fn get(ctx: &Ctx, mm: &ModelManager, id: i64) -> Result<Project> {
+	pub async fn get(ctx: &Ctx, mm: &ModelManager, id: i64) -> Result<Item> {
 		base::get::<Self, _>(ctx, mm, id).await
 	}
 
 	pub async fn list(
 		ctx: &Ctx,
 		mm: &ModelManager,
-		filter: Option<Vec<ProjectFilter>>,
+		filter: Option<Vec<ItemFilter>>,
 		list_options: Option<ListOptions>,
-	) -> Result<Vec<Project>> {
+	) -> Result<Vec<Item>> {
 		base::list::<Self, _, _>(ctx, mm, filter, list_options).await
 	}
 
@@ -107,9 +106,9 @@ impl ProjectBmc {
 		ctx: &Ctx,
 		mm: &ModelManager,
 		id: i64,
-		project_u: ProjectForUpdate,
+		item_u: ItemForUpdate,
 	) -> Result<()> {
-		base::update::<Self, _>(ctx, mm, id, project_u).await
+		base::update::<Self, _>(ctx, mm, id, item_u).await
 	}
 
 	pub async fn delete(ctx: &Ctx, mm: &ModelManager, id: i64) -> Result<()> {
